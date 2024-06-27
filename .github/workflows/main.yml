@@ -1,0 +1,21 @@
+name: Issue Management
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  manage-issues:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Check out repository
+      uses: actions/checkout@v2
+
+    - name: Close issue if not a collaborator
+      uses: peter-evans/close-issue@v2
+      with:
+        issue-number: ${{ github.event.issue.number }}
+        token: ${{ secrets.GITHUB_TOKEN }}
+        comment: "This issue has been automatically closed because only collaborators are allowed to create issues."
+      if: ${{ !github.event.issue.author_association == 'COLLABORATOR' }}
