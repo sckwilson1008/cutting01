@@ -1,0 +1,31 @@
+name: Close Non-Collaborator Issue
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  close-issue:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check if author is a collaborator
+      id: check_collaborator
+      uses: actions/github-script@v6
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          const { owner, repo, issue } = context.issue;
+          const { data: collaborators } = await github.repos.listCollaborators({ owner, repo });
+          const isCollaborator = collaborators.some(c => c.login === issue.user.login);
+          return { isCollaborator };
+
+    - name: Close the issue if not a collaborator
+      if: steps.check_collaborator.outputs.isCollaborator == false
+      run: |
+        echo "Closing issue created by non-collaborator"
+        curl \
+          -X PATCH \
+          -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+          -H "Accept: application/vnd.github.v3+json" \
+          https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.issue.number }} \
+          -d '{"state":"closed"}'
